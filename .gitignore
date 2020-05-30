@@ -1,0 +1,9 @@
+.stack-work/
+show-safe.cabal
+*~
+pkg.nix
+postgres
+postgres_data
+dist*
+postgres.log
+result
