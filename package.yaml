@@ -21,9 +21,15 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- universum
+- text
 
 library:
   source-dirs: src
+  default-extensions:
+  - NoImplicitPrelude
+  - LambdaCase
+  - OverloadedStrings
   ghc-options:
   # For details on warnings: https://downloads.haskell.org/~ghc/master/users-guide/using-warnings.html
   # Enable all warnings with -Weverything, then disable the ones we don’t care about
@@ -37,7 +43,6 @@ library:
   - -Wno-safe # Don’t use Safe Haskell warnings
   - -Wno-missing-local-signatures # Warning for polymorphic local bindings; nothing wrong with those.
   - -Wno-monomorphism-restriction # Don’t warn if the monomorphism restriction is used
-  - -Wno-implicit-prelude
   dependencies:
   - hspec
 
@@ -45,6 +50,10 @@ tests:
   show-safe-test:
     main:                Spec.hs
     source-dirs:         test
+    default-extensions:
+    - NoImplicitPrelude
+    - LambdaCase
+    - OverloadedStrings
     ghc-options:
     # For details on warnings: https://downloads.haskell.org/~ghc/master/users-guide/using-warnings.html
     # Enable all warnings with -Weverything, then disable the ones we don’t care about
@@ -58,7 +67,6 @@ tests:
     - -Wno-safe # Don’t use Safe Haskell warnings
     - -Wno-missing-local-signatures # Warning for polymorphic local bindings; nothing wrong with those.
     - -Wno-monomorphism-restriction # Don’t warn if the monomorphism restriction is used
-    - -Wno-implicit-prelude
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N

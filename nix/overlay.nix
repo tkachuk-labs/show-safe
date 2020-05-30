@@ -12,7 +12,7 @@ self: super:
     {
       haskellPackages = super.haskell.packages.ghc865.extend(
         self': super': {
-
+          universum = dontCheck super'.universum;
         }
       );
     }
