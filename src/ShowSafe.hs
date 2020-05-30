@@ -12,7 +12,4 @@ import ShowSafe.Data as Import
 import ShowSafe.Import
 
 showSafe :: (ShowSafe a) => a -> Text
-showSafe x = renderer mempty
-  where
-    renderer :: Text -> Text
-    renderer = coerce $ showSafeS x
+showSafe x = appRenderer (showSafeS x :: Renderer) mempty
