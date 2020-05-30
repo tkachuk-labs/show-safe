@@ -40,7 +40,6 @@ library:
   - -Wno-implicit-prelude
   dependencies:
   - hspec
-  - hspec-wai
 
 tests:
   show-safe-test:
@@ -66,4 +65,3 @@ tests:
     dependencies:
     - show-safe
     - hspec
-    - hspec-wai

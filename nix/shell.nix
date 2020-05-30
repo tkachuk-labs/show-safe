@@ -25,16 +25,12 @@ stdenv.mkDerivation {
   buildInputs = [
     /* IDE */
     haskell-ide
-    /* Apps */
-    postgresql
     /* Utils */
     git
     nix-prefetch-scripts
     openssh
     cabal2nix
-    protobuf
     cacert
-    xxd
   ];
 
   TERM="xterm-256color";

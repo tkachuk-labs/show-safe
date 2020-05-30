@@ -14,8 +14,8 @@ with nixpkgs;
 
 let callPackage = lib.callPackageWith haskellPackages;
     pkg = callPackage ./pkg.nix {inherit stdenv;};
-    systemDeps = [ protobuf makeWrapper cacert ];
-    testDeps = [ postgresql ];
+    systemDeps = [ makeWrapper cacert ];
+    testDeps = [  ];
 in
   haskell.lib.overrideCabal pkg (drv: {
     setupHaskellDepends =
