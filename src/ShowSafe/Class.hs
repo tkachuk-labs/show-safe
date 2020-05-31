@@ -52,27 +52,20 @@ class ShowSafe a where
 
 instance ShowSafe Bool
 
--- Base types instances
-instance ShowSafe () where
-  showsSafePrec = showsSafePrecDefault
+instance ShowSafe ()
 
-instance (ShowSafe a, ShowSafe b) => ShowSafe (a, b) where
-  showsSafePrec = showsSafePrecDefault
+instance (ShowSafe a, ShowSafe b) => ShowSafe (a, b)
 
-instance (ShowSafe a, ShowSafe b, ShowSafe c) => ShowSafe (a, b, c) where
-  showsSafePrec = showsSafePrecDefault
+instance (ShowSafe a, ShowSafe b, ShowSafe c) => ShowSafe (a, b, c)
 
 instance ShowSafe a => ShowSafe [a] where
   showsSafePrec _ = showSafeList
 
-instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :+: g) p) where
-  showsSafePrec = showsSafePrecDefault
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :+: g) p)
 
-instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :*: g) p) where
-  showsSafePrec = showsSafePrecDefault
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :*: g) p)
 
-instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p) where
-  showsSafePrec = showsSafePrecDefault
+instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p)
 
 --
 -- Private Generic classes and instances
