@@ -131,6 +131,10 @@ class ShowSafe a where
 -- Public instances
 --
 
+--
+-- TODO : implement all instances from GHC.Show
+--
+
 instance ShowSafe ()
 
 instance
