@@ -18,7 +18,7 @@ import ShowSafe.Import
 
 class GSS f where
   isNullary :: f p -> Bool
-  gssPrec :: (Monoid s, IsString s) => ConsKind -> Prec -> f p -> Renderer s
+  gssPrec :: (Monoid s, IsString s) => ConKind -> Prec -> f p -> Renderer s
 
 --
 -- Private instances
@@ -41,25 +41,31 @@ instance (Constructor c, GSS a) => GSS (M1 C c a) where
   gssPrec _ n c@(M1 x) =
     case fixity of
       Prefix ->
-        renParen
-          (n > appPrec && not (isNullary x))
-          ( newRen (fromString $ conName c)
-              <> (if isNullary x then mempty else renSpace)
-              <> renCon ck (gssPrec ck appPrec x)
-          )
+        let content = renCon ck (gssPrec ck appPrec x)
+            conWrap =
+              newRen (fromString cn)
+                <> (if isNullary x then mempty else renSpace)
+                <> content
+            wrapped = if ck == ConTup then content else conWrap
+         in renParen
+              (n > appPrec && not (isNullary x))
+              wrapped
       Infix _ m ->
         let prec1 = newPrec m
-         in renParen (n > prec1) (renCon ck $ gssPrec ck prec1 x)
+         in renParen
+              (n > prec1)
+              (renCon ck $ gssPrec ck prec1 x)
     where
       fixity = conFixity c
+      cn = conName c
       ck =
         if conIsRecord c
-          then Rec
-          else case conName c of
-            ('(' : ',' : _) -> Tup
+          then ConRec
+          else case cn of
+            ('(' : ',' : _) -> ConTup
             _ -> case fixity of
-              Prefix -> Pref
-              Infix {} -> Inf (show (conName c)) -- is this show needed?
+              Prefix -> ConPref
+              Infix {} -> ConInf cn
 
 instance (Selector s, GSS a) => GSS (M1 S s a) where
   isNullary = isNullary . unM1
@@ -85,13 +91,13 @@ instance (GSS a, GSS b) => GSS (a :+: b) where
 
 instance (GSS a, GSS b) => GSS (a :*: b) where
   isNullary = const False
-  gssPrec t@Rec n (a :*: b) =
+  gssPrec t@ConRec n (a :*: b) =
     gssPrec t n a <> newRen ", " <> gssPrec t n b
-  gssPrec t@(Inf s) n (a :*: b) =
+  gssPrec t@(ConInf s) n (a :*: b) =
     gssPrec t n a <> newRen (fromString s) <> gssPrec t n b
-  gssPrec t@Tup n (a :*: b) =
+  gssPrec t@ConTup n (a :*: b) =
     gssPrec t n a <> renComma <> gssPrec t n b
-  gssPrec t@Pref n (a :*: b) =
+  gssPrec t@ConPref n (a :*: b) =
     gssPrec t (n + 1) a <> renSpace <> gssPrec t (n + 1) b
 
 --
@@ -107,7 +113,7 @@ class ShowSafe a where
     Prec ->
     a ->
     Renderer s
-  showsSafePrec = showsSafePrecDefault
+  showsSafePrec p = gssPrec ConPref p . from
 
   showsSafe :: (Monoid s, IsString s) => a -> Renderer s
   showsSafe = showsSafePrec 0
@@ -120,16 +126,6 @@ class ShowSafe a where
     newRen "["
       <> mconcat (intersperse renComma $ showsSafePrec 0 <$> xs)
       <> newRen "]"
-
-appPrec :: Prec
-appPrec = 2
-
-showsSafePrecDefault ::
-  (Generic a, GSS (Rep a), Monoid s, IsString s) =>
-  Prec ->
-  a ->
-  Renderer s
-showsSafePrecDefault p = gssPrec Pref p . from
 
 --
 -- Public instances

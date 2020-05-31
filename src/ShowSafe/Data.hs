@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module ShowSafe.Data
-  ( ConsKind (..),
+  ( ConKind (..),
     Prec,
     Renderer,
     newPrec,
@@ -12,7 +12,12 @@ where
 
 import ShowSafe.Import.External
 
-data ConsKind = Rec | Tup | Pref | Inf String
+data ConKind
+  = ConRec
+  | ConTup
+  | ConPref
+  | ConInf String
+  deriving (Eq)
 
 newtype Prec
   = Prec Int

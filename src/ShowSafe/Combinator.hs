@@ -1,13 +1,24 @@
-module ShowSafe.Combinator (renCon, renParen, renComma, renSpace) where
+module ShowSafe.Combinator
+  ( appPrec,
+    renCon,
+    renParen,
+    renComma,
+    renSpace,
+  )
+where
 
+import qualified GHC.Show as S (appPrec)
 import ShowSafe.Data
 import ShowSafe.Import.External
 
-renCon :: (Monoid s, IsString s) => ConsKind -> Renderer s -> Renderer s
-renCon Rec p = newRen "{" <> p <> newRen "}"
-renCon Tup p = newRen "(" <> p <> newRen ")"
-renCon Pref p = p
-renCon Inf {} p = p
+appPrec :: Prec
+appPrec = newPrec S.appPrec
+
+renCon :: (Monoid s, IsString s) => ConKind -> Renderer s -> Renderer s
+renCon ConRec p = newRen "{" <> p <> newRen "}"
+renCon ConTup p = newRen "(" <> p <> newRen ")"
+renCon ConPref p = p
+renCon ConInf {} p = p
 
 renParen :: (Monoid s, IsString s) => Bool -> Renderer s -> Renderer s
 renParen c x =
