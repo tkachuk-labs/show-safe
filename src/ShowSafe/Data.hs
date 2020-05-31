@@ -4,6 +4,7 @@ module ShowSafe.Data
   ( ConsKind (..),
     Renderer,
     newRen,
+    parenRen,
     appRen,
   )
 where
@@ -19,3 +20,9 @@ newRen x = Renderer $ Endo (x <>)
 
 appRen :: Renderer -> Text -> Text
 appRen r = appEndo (coerce r)
+
+parenRen :: Bool -> Renderer -> Renderer
+parenRen c x =
+  if c
+    then newRen "(" <> x <> newRen ")"
+    else x

@@ -1,8 +1,4 @@
-module ShowSafe
-  ( module Import,
-    showSafe,
-  )
-where
+module ShowSafe (module Import) where
 
 --
 -- TODO : import only needed stuff
