@@ -17,11 +17,9 @@ data ConsKind = Rec | Tup | Pref | Inf String
 
 newtype Prec = Prec Int deriving (Eq, Ord, Num)
 
-newtype Renderer a = Renderer (Endo a) deriving (Semigroup, Monoid)
-
---
--- TODO : unRen
---
+newtype Renderer a
+  = Renderer {unRen :: Endo a}
+  deriving (Semigroup, Monoid)
 
 newPrec :: Int -> Prec
 newPrec = Prec
@@ -30,7 +28,7 @@ newRen :: (Monoid a) => a -> Renderer a
 newRen x = Renderer $ Endo (x <>)
 
 appRen :: Renderer a -> a -> a
-appRen (Renderer x) = appEndo x
+appRen = appEndo . unRen
 
 -- TODO : unRen
 
