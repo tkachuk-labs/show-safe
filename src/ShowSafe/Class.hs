@@ -1,6 +1,8 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -12,81 +14,30 @@ where
 import ShowSafe.Import
 
 --
--- Public classes
+-- Private class
 --
 
-appPrec :: Prec
-appPrec = newPrec 2
-
-showsSafePrecDefault ::
-  (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
-  Prec ->
-  a ->
-  Renderer t
-showsSafePrecDefault p = gssPrec Pref p . from
-
-class ShowSafe a where
-  showsSafePrec :: (Monoid t, IsString t) => Prec -> a -> Renderer t
-  default showsSafePrec ::
-    (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
-    Prec ->
-    a ->
-    Renderer t
-  showsSafePrec = showsSafePrecDefault
-
-  showsSafe :: (Monoid t, IsString t) => a -> Renderer t
-  showsSafe = showsSafePrec 0
-
-  showSafe :: (Monoid t, IsString t) => a -> t
-  showSafe x = appRen (showsSafe x) mempty
-
-  showSafeList :: (Monoid t, IsString t) => [a] -> Renderer t
-  showSafeList xs =
-    newRen "["
-      <> mconcat (intersperse renComma $ showsSafePrec 0 <$> xs)
-      <> newRen "]"
-
---
--- Public instances
---
-
-instance ShowSafe Bool
-
-instance ShowSafe ()
-
-instance (ShowSafe a, ShowSafe b) => ShowSafe (a, b)
-
-instance (ShowSafe a, ShowSafe b, ShowSafe c) => ShowSafe (a, b, c)
-
-instance ShowSafe a => ShowSafe [a] where
-  showsSafePrec _ = showSafeList
-
-instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :+: g) p)
-
-instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :*: g) p)
-
-instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p)
-
---
--- Private Generic classes and instances
---
-class GenShowSafe f where
+class GSS f where
   isNullary :: f p -> Bool
   gssPrec :: (Monoid t, IsString t) => ConsKind -> Prec -> f p -> Renderer t
 
-instance GenShowSafe V1 where
+--
+-- Private instances
+--
+
+instance GSS V1 where
   isNullary = const True
   gssPrec _ _ _ = mempty
 
-instance GenShowSafe U1 where
+instance GSS U1 where
   isNullary = const True
   gssPrec _ _ _ = mempty
 
-instance (ShowSafe a) => GenShowSafe (K1 i a) where
+instance (ShowSafe a) => GSS (K1 i a) where
   isNullary = const False
   gssPrec _ p x = showsSafePrec p $ unK1 x
 
-instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
+instance (GSS a, Constructor c) => GSS (M1 C c a) where
   isNullary = const False
   gssPrec _ n c@(M1 x) =
     case fixity of
@@ -111,7 +62,7 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
               Prefix -> Pref
               Infix {} -> Inf (show (conName c)) -- is this show needed?
 
-instance (Selector s, GenShowSafe a) => GenShowSafe (M1 S s a) where
+instance (Selector s, GSS a) => GSS (M1 S s a) where
   isNullary = isNullary . unM1
   gssPrec t n s@(M1 x)
     | selName s == "" = --showParen (n > appPrec)
@@ -121,17 +72,17 @@ instance (Selector s, GenShowSafe a) => GenShowSafe (M1 S s a) where
         <> newRen " = "
         <> gssPrec t 0 x
 
-instance (GenShowSafe a) => GenShowSafe (M1 D d a) where
+instance (GSS a) => GSS (M1 D d a) where
   isNullary = isNullary . unM1
   gssPrec t n = gssPrec t n . unM1
 
-instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :+: b) where
+instance (GSS a, GSS b) => GSS (a :+: b) where
   isNullary (L1 x) = isNullary x
   isNullary (R1 x) = isNullary x
   gssPrec t n (L1 x) = gssPrec t n x
   gssPrec t n (R1 x) = gssPrec t n x
 
-instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :*: b) where
+instance (GSS a, GSS b) => GSS (a :*: b) where
   isNullary = const False
   gssPrec t@Rec n (a :*: b) =
     gssPrec t n a <> newRen ", " <> gssPrec t n b
@@ -141,3 +92,81 @@ instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :*: b) where
     gssPrec t n a <> renComma <> gssPrec t n b
   gssPrec t@Pref n (a :*: b) =
     gssPrec t (n + 1) a <> renSpace <> gssPrec t (n + 1) b
+
+--instance GSS UChar where
+--  isNullary = const False
+--  gssPrec _ _ (UChar c) = showsSafePrec (newPrec 0) (C# c) <> newRen "#"
+--
+--instance GSS UDouble where
+--  isNullary = const False
+--  gssPrec _ _ (UDouble d) = showsSafePrec (newPrec 0) (D# d) <> newRen "##"
+--
+--instance GSS UFloat where
+--  isNullary = const False
+--  gssPrec _ _ (UFloat f) = showsSafePrec (newPrec 0) (F# f) <> newRen "#"
+--
+--instance GSS UInt where
+--  isNullary = const False
+--  gssPrec _ _ (UInt i) = showsSafePrec (newPrec 0) (I# i) <> newRen "#"
+--
+--instance GSS UWord where
+--  isNullary = const False
+--  gssPrec _ _ (UWord w) = showsSafePrec (newPrec 0) (W# w) <> (newRen "##")
+
+--
+-- Public class
+--
+
+type SS a = (ShowSafe a)
+
+class ShowSafe a where
+  showsSafePrec :: (Monoid t, IsString t) => Prec -> a -> Renderer t
+  default showsSafePrec ::
+    (Generic a, GSS (Rep a), Monoid t, IsString t) =>
+    Prec ->
+    a ->
+    Renderer t
+  showsSafePrec = showsSafePrecDefault
+
+  showsSafe :: (Monoid t, IsString t) => a -> Renderer t
+  showsSafe = showsSafePrec 0
+
+  showSafe :: (Monoid t, IsString t) => a -> t
+  showSafe x = appRen (showsSafe x) mempty
+
+  showSafeList :: (Monoid t, IsString t) => [a] -> Renderer t
+  showSafeList xs =
+    newRen "["
+      <> mconcat (intersperse renComma $ showsSafePrec 0 <$> xs)
+      <> newRen "]"
+
+appPrec :: Prec
+appPrec = newPrec 2
+
+showsSafePrecDefault ::
+  (Generic a, GSS (Rep a), Monoid t, IsString t) =>
+  Prec ->
+  a ->
+  Renderer t
+showsSafePrecDefault p = gssPrec Pref p . from
+
+--
+-- Public instances
+--
+
+instance ShowSafe Bool
+
+instance ShowSafe ()
+
+instance (SS a, SS b) => ShowSafe (a, b)
+
+instance (SS a, SS b, SS c) => ShowSafe (a, b, c)
+
+instance ShowSafe a => ShowSafe [a] where
+  showsSafePrec _ = showSafeList
+
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :+: g) p)
+
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :*: g) p)
+
+instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p)
