@@ -95,26 +95,21 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
           (n > appPrec && not (isNullary x))
           ( newRen (fromString $ conName c)
               <> (if isNullary x then mempty else renSpace)
-              <> renCon t (gssPrec t appPrec x)
+              <> renCon ck (gssPrec ck appPrec x)
           )
       Infix _ m ->
         let prec1 = newPrec m
-         in renParen (n > prec1) (renCon t (gssPrec t prec1 x))
+         in renParen (n > prec1) (renCon ck $ gssPrec ck prec1 x)
     where
       fixity = conFixity c
-      t =
-        if (conIsRecord c)
+      ck =
+        if conIsRecord c
           then Rec
-          else case (conIsTuple c) of
-            True -> Tup
-            False -> case fixity of
+          else case conName c of
+            ('(' : ',' : _) -> Tup
+            _ -> case fixity of
               Prefix -> Pref
-              Infix _ _ -> Inf (show (conName c)) -- is this show needed?
-      conIsTuple :: (Constructor c) => C1 c f p -> Bool
-      conIsTuple = isTupleName . conName
-        where
-          isTupleName ('(' : ',' : _) = True
-          isTupleName _ = False
+              Infix {} -> Inf (show (conName c)) -- is this show needed?
 
 instance (Selector s, GenShowSafe a) => GenShowSafe (M1 S s a) where
   isNullary = isNullary . unM1
