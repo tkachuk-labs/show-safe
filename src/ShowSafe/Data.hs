@@ -1,18 +1,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module ShowSafe.Data
-  ( newRenderer,
-    appRenderer,
+  ( ConsKind (..),
     Renderer,
+    newRen,
+    appRen,
   )
 where
 
 import ShowSafe.Import.External
 
+data ConsKind = Rec | Tup | Pref | Inf Text
+
 newtype Renderer = Renderer (Endo Text) deriving (Semigroup, Monoid)
 
-newRenderer :: (Text -> Text) -> Renderer
-newRenderer f = Renderer $ Endo f
+newRen :: Text -> Renderer
+newRen x = Renderer $ Endo (x <>)
 
-appRenderer :: Renderer -> Text -> Text
-appRenderer r = appEndo (coerce r)
+appRen :: Renderer -> Text -> Text
+appRen r = appEndo (coerce r)
