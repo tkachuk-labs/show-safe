@@ -43,7 +43,7 @@ class ShowSafe a where
   showSafeList :: (Monoid t, IsString t) => [a] -> Renderer t
   showSafeList xs =
     newRen "["
-      <> mconcat (intersperse (newRen ",") $ showsSafePrec 0 <$> xs)
+      <> mconcat (intersperse renComma $ showsSafePrec 0 <$> xs)
       <> newRen "]"
 
 --
@@ -91,15 +91,15 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
   gssPrec _ n c@(M1 x) =
     case fixity of
       Prefix ->
-        parenRen
+        renParen
           (n > appPrec && not (isNullary x))
           ( newRen (fromString $ conName c)
-              <> (if isNullary x then mempty else newRen " ")
-              <> showBraces t (gssPrec t appPrec x)
+              <> (if isNullary x then mempty else renSpace)
+              <> renCon t (gssPrec t appPrec x)
           )
       Infix _ m ->
         let prec1 = newPrec m
-         in parenRen (n > prec1) (showBraces t (gssPrec t prec1 x))
+         in renParen (n > prec1) (renCon t (gssPrec t prec1 x))
     where
       fixity = conFixity c
       t =
@@ -110,11 +110,6 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
             False -> case fixity of
               Prefix -> Pref
               Infix _ _ -> Inf (show (conName c)) -- is this show needed?
-      showBraces :: (Monoid t, IsString t) => ConsKind -> Renderer t -> Renderer t
-      showBraces Rec p = newRen "{" <> p <> newRen "}"
-      showBraces Tup p = newRen "(" <> p <> newRen ")"
-      showBraces Pref p = p
-      showBraces (Inf _) p = p
       conIsTuple :: (Constructor c) => C1 c f p -> Bool
       conIsTuple = isTupleName . conName
         where
@@ -148,6 +143,6 @@ instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :*: b) where
   gssPrec t@(Inf s) n (a :*: b) =
     gssPrec t n a <> newRen (fromString s) <> gssPrec t n b
   gssPrec t@Tup n (a :*: b) =
-    gssPrec t n a <> newRen "," <> gssPrec t n b
+    gssPrec t n a <> renComma <> gssPrec t n b
   gssPrec t@Pref n (a :*: b) =
-    gssPrec t (n + 1) a <> newRen " " <> gssPrec t (n + 1) b
+    gssPrec t (n + 1) a <> renSpace <> gssPrec t (n + 1) b

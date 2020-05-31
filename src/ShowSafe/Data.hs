@@ -6,7 +6,6 @@ module ShowSafe.Data
     Renderer,
     newPrec,
     newRen,
-    parenRen,
     appRen,
   )
 where
@@ -15,7 +14,9 @@ import ShowSafe.Import.External
 
 data ConsKind = Rec | Tup | Pref | Inf String
 
-newtype Prec = Prec Int deriving (Eq, Ord, Num)
+newtype Prec
+  = Prec Int
+  deriving (Eq, Ord, Num)
 
 newtype Renderer a
   = Renderer {unRen :: Endo a}
@@ -29,11 +30,3 @@ newRen x = Renderer $ Endo (x <>)
 
 appRen :: Renderer a -> a -> a
 appRen = appEndo . unRen
-
--- TODO : unRen
-
-parenRen :: (Monoid a, IsString a) => Bool -> Renderer a -> Renderer a
-parenRen c x =
-  if c
-    then newRen "(" <> x <> newRen ")"
-    else x
