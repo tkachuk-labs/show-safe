@@ -1,5 +1,4 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -52,6 +51,28 @@ class ShowSafe a where
 --
 
 instance ShowSafe Bool
+
+-- Base types instances
+instance ShowSafe () where
+  showsSafePrec = showsSafePrecDefault
+
+instance (ShowSafe a, ShowSafe b) => ShowSafe (a, b) where
+  showsSafePrec = showsSafePrecDefault
+
+instance (ShowSafe a, ShowSafe b, ShowSafe c) => ShowSafe (a, b, c) where
+  showsSafePrec = showsSafePrecDefault
+
+instance ShowSafe a => ShowSafe [a] where
+  showsSafePrec _ = showSafeList
+
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :+: g) p) where
+  showsSafePrec = showsSafePrecDefault
+
+instance (ShowSafe (f p), ShowSafe (g p)) => ShowSafe ((f :*: g) p) where
+  showsSafePrec = showsSafePrecDefault
+
+instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p) where
+  showsSafePrec = showsSafePrecDefault
 
 --
 -- Private Generic classes and instances
@@ -117,7 +138,7 @@ instance (Selector s, GenShowSafe a) => GenShowSafe (M1 S s a) where
 
 instance (GenShowSafe a) => GenShowSafe (M1 D d a) where
   isNullary = isNullary . unM1
-  gssPrec t n (M1 x) = gssPrec t n x
+  gssPrec t n = gssPrec t n . unM1
 
 instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :+: b) where
   isNullary (L1 x) = isNullary x
