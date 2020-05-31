@@ -15,21 +15,21 @@ import ShowSafe.Import
 -- Public classes
 --
 
-appPrec :: Int
-appPrec = 2
+appPrec :: Prec
+appPrec = newPrec 2
 
 showsSafePrecDefault ::
   (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
-  Int ->
+  Prec ->
   a ->
   Renderer t
 showsSafePrecDefault p = gssPrec Pref p . from
 
 class ShowSafe a where
-  showsSafePrec :: (Monoid t, IsString t) => Int -> a -> Renderer t
+  showsSafePrec :: (Monoid t, IsString t) => Prec -> a -> Renderer t
   default showsSafePrec ::
     (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
-    Int ->
+    Prec ->
     a ->
     Renderer t
   showsSafePrec = showsSafePrecDefault
@@ -72,7 +72,7 @@ instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p)
 --
 class GenShowSafe f where
   isNullary :: f p -> Bool
-  gssPrec :: (Monoid t, IsString t) => ConsKind -> Int -> f p -> Renderer t
+  gssPrec :: (Monoid t, IsString t) => ConsKind -> Prec -> f p -> Renderer t
 
 instance GenShowSafe V1 where
   isNullary = const True
@@ -97,7 +97,9 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
               <> (if isNullary x then mempty else newRen " ")
               <> showBraces t (gssPrec t appPrec x)
           )
-      Infix _ m -> parenRen (n > m) (showBraces t (gssPrec t m x))
+      Infix _ m ->
+        let prec1 = newPrec m
+         in parenRen (n > prec1) (showBraces t (gssPrec t prec1 x))
     where
       fixity = conFixity c
       t =
@@ -144,7 +146,7 @@ instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :*: b) where
   gssPrec t@Rec n (a :*: b) =
     gssPrec t n a <> newRen ", " <> gssPrec t n b
   gssPrec t@(Inf s) n (a :*: b) =
-    gssPrec t n a <> (newRen $ fromString s) <> gssPrec t n b
+    gssPrec t n a <> newRen (fromString s) <> gssPrec t n b
   gssPrec t@Tup n (a :*: b) =
     gssPrec t n a <> newRen "," <> gssPrec t n b
   gssPrec t@Pref n (a :*: b) =
