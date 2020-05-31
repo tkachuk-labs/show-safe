@@ -11,17 +11,23 @@ where
 
 import ShowSafe.Import.External
 
-data ConsKind = Rec | Tup | Pref | Inf Text
+data ConsKind = Rec | Tup | Pref | Inf String
 
-newtype Renderer = Renderer (Endo Text) deriving (Semigroup, Monoid)
+newtype Renderer a = Renderer (Endo a) deriving (Semigroup, Monoid)
 
-newRen :: Text -> Renderer
+--
+-- TODO : unRen
+--
+
+newRen :: (Monoid a) => a -> Renderer a
 newRen x = Renderer $ Endo (x <>)
 
-appRen :: Renderer -> Text -> Text
-appRen r = appEndo (coerce r)
+appRen :: Renderer a -> a -> a
+appRen (Renderer x) = appEndo x
 
-parenRen :: Bool -> Renderer -> Renderer
+-- TODO : unRen
+
+parenRen :: (Monoid a, IsString a) => Bool -> Renderer a -> Renderer a
 parenRen c x =
   if c
     then newRen "(" <> x <> newRen ")"

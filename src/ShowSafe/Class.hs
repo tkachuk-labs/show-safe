@@ -19,28 +19,28 @@ appPrec :: Int
 appPrec = 2
 
 showsSafePrecDefault ::
-  (Generic a, GenShowSafe (Rep a)) =>
+  (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
   Int ->
   a ->
-  Renderer
+  Renderer t
 showsSafePrecDefault p = gssPrec Pref p . from
 
 class ShowSafe a where
-  showsSafePrec :: Int -> a -> Renderer
+  showsSafePrec :: (Monoid t, IsString t) => Int -> a -> Renderer t
   default showsSafePrec ::
-    (Generic a, GenShowSafe (Rep a)) =>
+    (Generic a, GenShowSafe (Rep a), Monoid t, IsString t) =>
     Int ->
     a ->
-    Renderer
+    Renderer t
   showsSafePrec = showsSafePrecDefault
 
-  showsSafe :: a -> Renderer
+  showsSafe :: (Monoid t, IsString t) => a -> Renderer t
   showsSafe = showsSafePrec 0
 
-  showSafe :: a -> Text
-  showSafe x = appRen (showsSafe x :: Renderer) mempty
+  showSafe :: (Monoid t, IsString t) => a -> t
+  showSafe x = appRen (showsSafe x) mempty
 
-  showSafeList :: [a] -> Renderer
+  showSafeList :: (Monoid t, IsString t) => [a] -> Renderer t
   showSafeList xs =
     newRen "["
       <> mconcat (intersperse (newRen ",") $ showsSafePrec 0 <$> xs)
@@ -72,7 +72,7 @@ instance ShowSafe (f (g p)) => ShowSafe ((f :.: g) p)
 --
 class GenShowSafe f where
   isNullary :: f p -> Bool
-  gssPrec :: ConsKind -> Int -> f p -> Renderer
+  gssPrec :: (Monoid t, IsString t) => ConsKind -> Int -> f p -> Renderer t
 
 instance GenShowSafe V1 where
   isNullary = const True
@@ -93,7 +93,7 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
       Prefix ->
         parenRen
           (n > appPrec && not (isNullary x))
-          ( newRen (pack $ conName c)
+          ( newRen (fromString $ conName c)
               <> (if isNullary x then mempty else newRen " ")
               <> showBraces t (gssPrec t appPrec x)
           )
@@ -108,7 +108,7 @@ instance (GenShowSafe a, Constructor c) => GenShowSafe (M1 C c a) where
             False -> case fixity of
               Prefix -> Pref
               Infix _ _ -> Inf (show (conName c)) -- is this show needed?
-      showBraces :: ConsKind -> Renderer -> Renderer
+      showBraces :: (Monoid t, IsString t) => ConsKind -> Renderer t -> Renderer t
       showBraces Rec p = newRen "{" <> p <> newRen "}"
       showBraces Tup p = newRen "(" <> p <> newRen ")"
       showBraces Pref p = p
@@ -125,7 +125,7 @@ instance (Selector s, GenShowSafe a) => GenShowSafe (M1 S s a) where
     | selName s == "" = --showParen (n > appPrec)
       gssPrec t n x
     | otherwise =
-      newRen (pack $ selName s)
+      newRen (fromString $ selName s)
         <> newRen " = "
         <> gssPrec t 0 x
 
@@ -144,7 +144,7 @@ instance (GenShowSafe a, GenShowSafe b) => GenShowSafe (a :*: b) where
   gssPrec t@Rec n (a :*: b) =
     gssPrec t n a <> newRen ", " <> gssPrec t n b
   gssPrec t@(Inf s) n (a :*: b) =
-    gssPrec t n a <> newRen s <> gssPrec t n b
+    gssPrec t n a <> (newRen $ fromString s) <> gssPrec t n b
   gssPrec t@Tup n (a :*: b) =
     gssPrec t n a <> newRen "," <> gssPrec t n b
   gssPrec t@Pref n (a :*: b) =
