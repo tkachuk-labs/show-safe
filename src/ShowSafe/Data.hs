@@ -4,9 +4,14 @@ module ShowSafe.Data
   ( ConKind (..),
     Prec,
     Renderer,
+    --
+    -- TODO : export from package only type
+    --
+    Salt (..),
     newPrec,
     newRen,
     appRen,
+    newSalt,
   )
 where
 
@@ -27,6 +32,9 @@ newtype Renderer a
   = Renderer {unRen :: Endo a}
   deriving (Semigroup, Monoid)
 
+newtype Salt
+  = Salt ByteString
+
 newPrec :: Int -> Prec
 newPrec = Prec
 
@@ -35,3 +43,6 @@ newRen x = Renderer $ Endo (x <>)
 
 appRen :: Renderer a -> a -> a
 appRen = appEndo . unRen
+
+newSalt :: ByteString -> Salt
+newSalt = Salt

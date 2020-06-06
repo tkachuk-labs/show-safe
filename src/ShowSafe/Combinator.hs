@@ -1,5 +1,6 @@
 module ShowSafe.Combinator
-  ( appPrec,
+  ( showHash,
+    appPrec,
     renCon,
     renParen,
     renComma,
@@ -10,6 +11,19 @@ where
 import qualified GHC.Show as S (appPrec)
 import ShowSafe.Data
 import ShowSafe.Import.External
+
+showHash ::
+  (HashAlgorithm h, Show h, Show a, IsString b, Monoid b) =>
+  h ->
+  Maybe Salt ->
+  a ->
+  b
+showHash h ms x =
+  show h <> salted <> show (hashWith h $ s <> show x)
+  where
+    s :: ByteString
+    s = maybe mempty coerce ms
+    salted = if isJust ms then " SALTED " else " "
 
 appPrec :: Prec
 appPrec = newPrec S.appPrec
