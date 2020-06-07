@@ -170,6 +170,15 @@ class ShowSafe a where
 
 instance ShowSafe Bool
 
+instance SS a => ShowSafe [a] where
+  -- {-# SPECIALIZE instance Show [Char] #-}
+  showsSafePrec xs _ h s = showSafeList h s xs
+
+--instance ShowSafe Char where
+--  showsSafePrec x _ h s = showHash x h s
+
+--showList cs = showChar '"' . showLitString cs . showChar '"'
+
 --
 -- TODO : remove me
 --
@@ -199,9 +208,6 @@ instance
 instance
   (SS a, SS b, SS c, SS d, SS e, SS f, SS g) =>
   ShowSafe (a, b, c, d, e, f, g)
-
-instance SS a => ShowSafe [a] where
-  showsSafePrec xs _ h s = showSafeList h s xs
 
 instance ShowSafe Any
 

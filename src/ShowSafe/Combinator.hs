@@ -14,16 +14,16 @@ import ShowSafe.Import.External
 
 showHash ::
   (HashAlgorithm h, Show h, Show a, IsString b, Monoid b) =>
+  a ->
   h ->
   Maybe Salt ->
-  a ->
   b
-showHash h ms x =
-  show h <> salted <> show (hashWith h $ s <> show x)
+showHash x h ms =
+  salted <> show h <> " " <> show (hashWith h $ s <> show x)
   where
     s :: ByteString
     s = maybe mempty coerce ms
-    salted = if isJust ms then " SALTED " else " "
+    salted = if isJust ms then "SALTED " else mempty
 
 appPrec :: Prec
 appPrec = newPrec S.appPrec
