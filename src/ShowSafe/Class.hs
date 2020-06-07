@@ -17,14 +17,14 @@ import ShowSafe.Import
 --
 
 class GSS f where
-  isNullary :: f p -> Bool
+  isNullary :: f a -> Bool
   gssPrec ::
     (HashAlgorithm h, Monoid s, IsString s) =>
-    h ->
-    Maybe Salt ->
+    f a ->
     ConKind ->
     Prec ->
-    f p ->
+    h ->
+    Maybe Salt ->
     Renderer s
 
 --
@@ -41,32 +41,32 @@ instance GSS U1 where
 
 instance (ShowSafe a) => GSS (K1 i a) where
   isNullary = const False
-  gssPrec h s _ p x = showsSafePrec h s p $ unK1 x
+  gssPrec x _ = showsSafePrec (unK1 x)
 
-instance (Constructor c, GSS a) => GSS (M1 C c a) where
+instance (Constructor con, GSS a) => GSS (M1 C con a) where
   isNullary = const False
-  gssPrec h s _ n c@(M1 x) =
+  gssPrec con@(M1 x) _ p h s =
     case fixity of
       Prefix ->
-        let content = renCon ck (gssPrec h s ck appPrec x)
+        let content = renCon t (gssPrec x t appPrec h s)
             conWrap =
               newRen (fromString cn)
                 <> (if isNullary x then mempty else renSpace)
                 <> content
-            wrapped = if ck == ConTup then content else conWrap
+            wrapped = if t == ConTup then content else conWrap
          in renParen
-              (n > appPrec && not (isNullary x))
+              (p > appPrec && not (isNullary x))
               wrapped
       Infix _ m ->
         let prec1 = newPrec m
          in renParen
-              (n > prec1)
-              (renCon ck $ gssPrec h s ck prec1 x)
+              (p > prec1)
+              (renCon t $ gssPrec x t prec1 h s)
     where
-      fixity = conFixity c
-      cn = conName c
-      ck =
-        if conIsRecord c
+      fixity = conFixity con
+      cn = conName con
+      t =
+        if conIsRecord con
           then ConRec
           else case cn of
             ('(' : ',' : _) -> ConTup
@@ -74,38 +74,38 @@ instance (Constructor c, GSS a) => GSS (M1 C c a) where
               Prefix -> ConPref
               Infix {} -> ConInf cn
 
-instance (Selector s, GSS a) => GSS (M1 S s a) where
+instance (Selector sel, GSS a) => GSS (M1 S sel a) where
   isNullary = isNullary . unM1
-  gssPrec h salt t n s@(M1 x) =
+  gssPrec sel@(M1 x) t p h s =
     if null sn
-      then gssPrec h salt t n x --showParen (n > appPrec)
+      then gssPrec x t p h s
       else
         newRen (fromString sn)
           <> newRen " = "
-          <> gssPrec h salt t 0 x
+          <> gssPrec x t 0 h s
     where
-      sn = selName s
+      sn = selName sel
 
-instance (GSS a) => GSS (M1 D d a) where
+instance (GSS a) => GSS (M1 D dat a) where
   isNullary = isNullary . unM1
-  gssPrec h s t n = gssPrec h s t n . unM1
+  gssPrec = gssPrec . unM1
 
 instance (GSS a, GSS b) => GSS (a :+: b) where
   isNullary (L1 x) = isNullary x
   isNullary (R1 x) = isNullary x
-  gssPrec h s t n (L1 x) = gssPrec h s t n x
-  gssPrec h s t n (R1 x) = gssPrec h s t n x
+  gssPrec (L1 x) = gssPrec x
+  gssPrec (R1 x) = gssPrec x
 
 instance (GSS a, GSS b) => GSS (a :*: b) where
   isNullary = const False
-  gssPrec h s t@ConRec n (a :*: b) =
-    gssPrec h s t n a <> newRen ", " <> gssPrec h s t n b
-  gssPrec h s t@(ConInf c) n (a :*: b) =
-    gssPrec h s t n a <> newRen (fromString c) <> gssPrec h s t n b
-  gssPrec h s t@ConTup n (a :*: b) =
-    gssPrec h s t n a <> renComma <> gssPrec h s t n b
-  gssPrec h s t@ConPref n (a :*: b) =
-    gssPrec h s t (n + 1) a <> renSpace <> gssPrec h s t (n + 1) b
+  gssPrec (x :*: y) t@ConRec p h s =
+    gssPrec x t p h s <> newRen ", " <> gssPrec y t p h s
+  gssPrec (x :*: y) t@(ConInf c) p h s =
+    gssPrec x t p h s <> newRen (fromString c) <> gssPrec y t p h s
+  gssPrec (x :*: y) t@ConTup p h s =
+    gssPrec x t p h s <> renComma <> gssPrec y t p h s
+  gssPrec (x :*: y) t@ConPref p h s =
+    gssPrec x t (p + 1) h s <> renSpace <> gssPrec y t (p + 1) h s
 
 --
 -- Public class
@@ -116,38 +116,38 @@ type SS a = (ShowSafe a)
 class ShowSafe a where
   showsSafePrec ::
     (HashAlgorithm h, Monoid s, IsString s) =>
+    a ->
+    Prec ->
     h ->
     Maybe Salt ->
-    Prec ->
-    a ->
     Renderer s
   default showsSafePrec ::
     (HashAlgorithm h, Generic a, GSS (Rep a), Monoid s, IsString s) =>
+    a ->
+    Prec ->
     h ->
     Maybe Salt ->
-    Prec ->
-    a ->
     Renderer s
-  showsSafePrec h s p =
-    gssPrec h s ConPref p . from
+  showsSafePrec x =
+    gssPrec (from x) ConPref
 
   showsSafe ::
     (HashAlgorithm h, Monoid s, IsString s) =>
+    a ->
     h ->
     Maybe Salt ->
-    a ->
     Renderer s
-  showsSafe alg salt =
-    showsSafePrec alg salt 0
+  showsSafe x =
+    showsSafePrec x 0
 
   showSafe ::
     (HashAlgorithm h, Monoid s, IsString s) =>
+    a ->
     h ->
     Maybe Salt ->
-    a ->
     s
-  showSafe alg salt x =
-    appRen (showsSafe alg salt x) mempty
+  showSafe x h s =
+    appRen (showsSafe x h s) mempty
 
   showSafeList ::
     (HashAlgorithm h, Monoid s, IsString s) =>
@@ -155,9 +155,9 @@ class ShowSafe a where
     Maybe Salt ->
     [a] ->
     Renderer s
-  showSafeList alg salt xs =
+  showSafeList h s xs =
     newRen "["
-      <> mconcat (intersperse renComma $ showsSafePrec alg salt 0 <$> xs)
+      <> mconcat (intersperse renComma $ (\x -> showsSafePrec x 0 h s) <$> xs)
       <> newRen "]"
 
 --
@@ -201,7 +201,7 @@ instance
   ShowSafe (a, b, c, d, e, f, g)
 
 instance SS a => ShowSafe [a] where
-  showsSafePrec alg salt _ = showSafeList alg salt
+  showsSafePrec xs _ h s = showSafeList h s xs
 
 instance ShowSafe Any
 
