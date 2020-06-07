@@ -19,7 +19,7 @@ import ShowSafe.Import
 class GSS f where
   isNullary :: f a -> Bool
   gssPrec ::
-    (HashAlgorithm h, Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Monoid s, IsString s) =>
     f a ->
     ConKind ->
     Prec ->
@@ -115,14 +115,14 @@ type SS a = (ShowSafe a)
 
 class ShowSafe a where
   showsSafePrec ::
-    (HashAlgorithm h, Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Monoid s, IsString s) =>
     a ->
     Prec ->
     h ->
     Maybe Salt ->
     Renderer s
   default showsSafePrec ::
-    (HashAlgorithm h, Generic a, GSS (Rep a), Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Generic a, GSS (Rep a), Monoid s, IsString s) =>
     a ->
     Prec ->
     h ->
@@ -132,7 +132,7 @@ class ShowSafe a where
     gssPrec (from x) ConPref
 
   showsSafe ::
-    (HashAlgorithm h, Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Monoid s, IsString s) =>
     a ->
     h ->
     Maybe Salt ->
@@ -141,7 +141,7 @@ class ShowSafe a where
     showsSafePrec x 0
 
   showSafe ::
-    (HashAlgorithm h, Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Monoid s, IsString s) =>
     a ->
     h ->
     Maybe Salt ->
@@ -150,12 +150,12 @@ class ShowSafe a where
     appRen (showsSafe x h s) mempty
 
   showSafeList ::
-    (HashAlgorithm h, Monoid s, IsString s) =>
+    (HashAlgorithm h, Show h, Monoid s, IsString s) =>
+    [a] ->
     h ->
     Maybe Salt ->
-    [a] ->
     Renderer s
-  showSafeList h s xs =
+  showSafeList xs h s =
     newRen "["
       <> mconcat (intersperse renComma $ (\x -> showsSafePrec x 0 h s) <$> xs)
       <> newRen "]"
@@ -171,13 +171,11 @@ class ShowSafe a where
 instance ShowSafe Bool
 
 instance SS a => ShowSafe [a] where
-  -- {-# SPECIALIZE instance Show [Char] #-}
-  showsSafePrec xs _ h s = showSafeList h s xs
+  showsSafePrec xs _ = showSafeList xs
 
---instance ShowSafe Char where
---  showsSafePrec x _ h s = showHash x h s
-
---showList cs = showChar '"' . showLitString cs . showChar '"'
+instance ShowSafe Char where
+  showsSafePrec x _ = renHash (fromString [x])
+  showSafeList xs = renHash (fromString xs)
 
 --
 -- TODO : remove me
