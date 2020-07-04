@@ -5,6 +5,7 @@ module ShowSafe.Combinator
     renComma,
     renSpace,
     renHash,
+    renHashShow,
   )
 where
 
@@ -41,10 +42,18 @@ renHash ::
   Renderer s
 renHash x h ms =
   newRen salted
-    <> (newRen $ show h)
+    <> newRen (show h)
     <> renSpace
     <> newRen (show $ hashWith h $ s <> x)
   where
     s :: ByteString
     s = maybe mempty coerce ms
     salted = if isJust ms then "SALTED " else mempty
+
+renHashShow ::
+  (Show a, HashAlgorithm h, Show h, IsString s, Monoid s) =>
+  a ->
+  h ->
+  Maybe Salt ->
+  Renderer s
+renHashShow = renHash . show

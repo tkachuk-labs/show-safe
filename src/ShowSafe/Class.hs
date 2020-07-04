@@ -161,27 +161,36 @@ class ShowSafe a where
       <> newRen "]"
 
 --
--- Public instances
+-- TODO : Public instances similar to
+-- https://hackage.haskell.org/package/base-4.14.0.0/docs/src/GHC.Show.html#Show
 --
 
---
--- TODO : implement all instances from GHC.Show
---
+instance ShowSafe ()
+
+instance SS a => ShowSafe [a] where
+  {-# SPECIALIZE instance ShowSafe [Char] #-}
+  showsSafePrec xs _ = showSafeList xs
 
 instance ShowSafe Bool
 
-instance SS a => ShowSafe [a] where
-  showsSafePrec xs _ = showSafeList xs
+instance ShowSafe Ordering
 
 instance ShowSafe Char where
   showsSafePrec x _ = renHash (fromString [x])
   showSafeList xs = renHash (fromString xs)
 
---
--- TODO : remove me
---
+instance ShowSafe Int where
+  showsSafePrec x _ = renHashShow x
 
-instance ShowSafe ()
+instance ShowSafe Word where
+  showsSafePrec x _ = renHashShow x
+
+--
+-- TODO : check brackets (nested Maybe example)
+--
+instance (SS a) => ShowSafe (Maybe a)
+
+instance (SS a) => ShowSafe (NonEmpty a)
 
 instance
   (SS a, SS b) =>
@@ -206,7 +215,3 @@ instance
 instance
   (SS a, SS b, SS c, SS d, SS e, SS f, SS g) =>
   ShowSafe (a, b, c, d, e, f, g)
-
-instance ShowSafe Any
-
-instance ShowSafe All
