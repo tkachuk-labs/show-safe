@@ -10,6 +10,9 @@ module ShowSafe.Class
   )
 where
 
+import Data.Complex (Complex)
+import Data.Monoid (Alt, Ap)
+import Data.Semigroup (Arg, Max, Min)
 import Data.Typeable (TyCon)
 import ShowSafe.Import
 import Type.Reflection (SomeTypeRep)
@@ -243,16 +246,86 @@ instance ShowSafe TyCon where
 -- if not - use renShowHash or renShow combinators
 --
 
+instance ShowSafe Associativity
+
+instance ShowSafe Fixity
+
+instance ShowSafe Any
+
+instance ShowSafe All
+
+instance ShowSafe Void
+
 instance SS a => ShowSafe [a] where
   {-# SPECIALIZE instance ShowSafe [Char] #-}
   showsSafePrec xs _ = showSafeList xs
 
 --
--- TODO : check brackets (nested Maybe example)
+-- TODO : check parens bug (nested Maybe example)
 --
+
 instance (SS a) => ShowSafe (Maybe a)
 
+instance (Show a) => ShowSafe (Ratio a) where
+  showsSafePrec x _ = renShowHash x
+
+instance (SS a) => ShowSafe (Par1 a)
+
 instance (SS a) => ShowSafe (NonEmpty a)
+
+instance (SS a) => ShowSafe (Down a)
+
+instance (SS a) => ShowSafe (Product a)
+
+instance (SS a) => ShowSafe (Sum a)
+
+instance (SS a) => ShowSafe (Dual a)
+
+instance (SS a) => ShowSafe (Last a)
+
+instance (SS a) => ShowSafe (First a)
+
+instance (SS a) => ShowSafe (Identity a)
+
+instance (SS a) => ShowSafe (ZipList a)
+
+instance (SS a) => ShowSafe (Option a)
+
+instance (SS a) => ShowSafe (WrappedMonoid a)
+
+instance (SS a) => ShowSafe (Max a)
+
+instance (SS a) => ShowSafe (Min a)
+
+instance (SS a) => ShowSafe (Complex a)
+
+instance (SS a, SS b) => ShowSafe (Either a b)
+
+instance ShowSafe (V1 p)
+
+instance ShowSafe (U1 p)
+
+instance ShowSafe (Proxy s)
+
+instance (SS a, SS b) => ShowSafe (Arg a b)
+
+instance SS (f p) => ShowSafe (Rec1 f p)
+
+instance SS (f a) => ShowSafe (Alt f a)
+
+instance SS (f a) => ShowSafe (Ap f a)
+
+instance SS a => ShowSafe (Const a b)
+
+instance SS c => ShowSafe (K1 i c p)
+
+instance (SS (f p), SS (g p)) => ShowSafe ((f :+: g) p)
+
+instance (SS (f p), SS (g p)) => ShowSafe ((f :*: g) p)
+
+instance SS (f p) => ShowSafe (M1 i c f p)
+
+instance SS (f (g p)) => ShowSafe ((f :.: g) p)
 
 instance
   (SS a, SS b) =>
