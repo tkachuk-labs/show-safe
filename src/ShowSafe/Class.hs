@@ -10,9 +10,14 @@ module ShowSafe.Class
   )
 where
 
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Lazy as BL
 import Data.Complex (Complex)
 import Data.Monoid (Alt, Ap)
 import Data.Semigroup (Arg, Max, Min)
+import qualified Data.Text as TS
+import qualified Data.Text.Encoding as TS
+import qualified Data.Text.Lazy as TL
 import Data.Typeable (TyCon)
 import ShowSafe.Import
 import Type.Reflection (SomeTypeRep)
@@ -350,3 +355,19 @@ instance
 instance
   (SS a, SS b, SS c, SS d, SS e, SS f, SS g) =>
   ShowSafe (a, b, c, d, e, f, g)
+
+--
+-- Other common instances
+--
+
+instance ShowSafe TS.Text where
+  showsSafePrec x _ = renHash $ TS.encodeUtf8 x
+
+instance ShowSafe TL.Text where
+  showsSafePrec x _ = renHash $ TS.encodeUtf8 $ TL.toStrict x
+
+instance ShowSafe BS.ByteString where
+  showsSafePrec x _ = renHash x
+
+instance ShowSafe BL.ByteString where
+  showsSafePrec x _ = renHash $ BL.toStrict x
