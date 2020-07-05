@@ -10,7 +10,9 @@ module ShowSafe.Class
   )
 where
 
+import Data.Typeable (TyCon)
 import ShowSafe.Import
+import Type.Reflection (SomeTypeRep)
 
 --
 -- Private class
@@ -161,29 +163,89 @@ class ShowSafe a where
       <> newRen "]"
 
 --
--- TODO : Public instances similar to
--- https://hackage.haskell.org/package/base-4.14.0.0/docs/src/GHC.Show.html#Show
+-- Instances similar to
+-- https://hackage.haskell.org/package/base-4.14.0.0/docs/Prelude.html#t:Show
 --
 
-instance ShowSafe ()
-
-instance SS a => ShowSafe [a] where
-  {-# SPECIALIZE instance ShowSafe [Char] #-}
-  showsSafePrec xs _ = showSafeList xs
-
 instance ShowSafe Bool
-
-instance ShowSafe Ordering
 
 instance ShowSafe Char where
   showsSafePrec x _ = renHash (fromString [x])
   showSafeList xs = renHash (fromString xs)
 
+instance ShowSafe Double where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Float where
+  showsSafePrec x _ = renShowHash x
+
 instance ShowSafe Int where
-  showsSafePrec x _ = renHashShow x
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Int8 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Int16 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Int32 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Int64 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Integer where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Natural where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Ordering
 
 instance ShowSafe Word where
-  showsSafePrec x _ = renHashShow x
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Word8 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Word16 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Word32 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe Word64 where
+  showsSafePrec x _ = renShowHash x
+
+instance ShowSafe RuntimeRep where
+  showsSafePrec x _ _ _ = renShow x
+
+instance ShowSafe VecCount where
+  showsSafePrec x _ _ _ = renShow x
+
+instance ShowSafe VecElem where
+  showsSafePrec x _ _ _ = renShow x
+
+instance ShowSafe CallStack where
+  showsSafePrec x _ _ _ = renShow x
+
+instance ShowSafe SomeTypeRep where
+  showsSafePrec x _ _ _ = renShow x
+
+instance ShowSafe ()
+
+instance ShowSafe TyCon where
+  showsSafePrec x _ _ _ = renShow x
+
+--
+-- TODO : define other instances
+-- use Generic if possible
+-- if not - use renShowHash or renShow combinators
+--
+
+instance SS a => ShowSafe [a] where
+  {-# SPECIALIZE instance ShowSafe [Char] #-}
+  showsSafePrec xs _ = showSafeList xs
 
 --
 -- TODO : check brackets (nested Maybe example)

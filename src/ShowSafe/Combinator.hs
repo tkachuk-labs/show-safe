@@ -5,7 +5,8 @@ module ShowSafe.Combinator
     renComma,
     renSpace,
     renHash,
-    renHashShow,
+    renShowHash,
+    renShow,
   )
 where
 
@@ -50,10 +51,17 @@ renHash x h ms =
     s = maybe mempty coerce ms
     salted = if isJust ms then "SALTED " else mempty
 
-renHashShow ::
+renShowHash ::
   (Show a, HashAlgorithm h, Show h, IsString s, Monoid s) =>
   a ->
   h ->
   Maybe Salt ->
   Renderer s
-renHashShow = renHash . show
+renShowHash = renHash . show
+
+--
+-- TODO : this function is not efficient
+-- ideally should reuse showsPrec
+--
+renShow :: (Show a, IsString s, Monoid s) => a -> Renderer s
+renShow = newRen . show
